@@ -1,0 +1,43 @@
+# Agent-reference docs (not part of the public repo)
+PRD.md
+backend.md
+frontend.md
+flow.md
+techstack.md
+requirements.md
+status.md
+
+# Node
+node_modules/
+npm-debug.log*
+*.log
+jest.log
+jest.err.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Generated circuit artifacts (large / derived)
+circuits/*.ptau
+circuits/*.zkey
+circuits/access_control.r1cs
+circuits/access_control.sym
+circuits/access_control_js/
+
+# Fabric network generated material
+fabric-network/crypto-config/
+fabric-network/channel-artifacts/
+fabric-network/wallets/
+
+# Local tooling (downloaded binaries)
+tools/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

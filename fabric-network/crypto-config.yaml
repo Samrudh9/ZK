@@ -1,0 +1,41 @@
+# ZKHealthPass — cryptogen configuration
+# Generates static crypto material for:
+#   Orderer org  : 3 Raft orderers (example.com)
+#   Org1 (patients)  : 2 peers, 1 admin user (org1.example.com)
+#   Org2 (providers) : 2 peers, 1 admin user (org2.example.com)
+
+OrdererOrgs:
+  - Name: Orderer
+    Domain: example.com
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer0
+        SANS:
+          - localhost
+      - Hostname: orderer1
+        SANS:
+          - localhost
+      - Hostname: orderer2
+        SANS:
+          - localhost
+
+PeerOrgs:
+  - Name: Org1
+    Domain: org1.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+      SANS:
+        - localhost
+    Users:
+      Count: 1
+
+  - Name: Org2
+    Domain: org2.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+      SANS:
+        - localhost
+    Users:
+      Count: 1
