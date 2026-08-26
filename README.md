@@ -173,4 +173,4 @@ node scripts/demo-proof.js
 
 [MIT](LICENSE) © 2026 Samrudh S Shetty
 
-*Project guide: TBD · Department of Computer Science & Engineering, NMAM Institute of Technology*
+*Project guide: Mr. CHIDANANDA T · Department of Computer Science & Engineering, NMAM Institute of Technology*
