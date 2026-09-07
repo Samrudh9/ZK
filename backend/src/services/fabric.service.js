@@ -78,7 +78,7 @@ async function getContract() {
 async function submitTransaction(functionName, ...args) {
   const contract = await getContract();
   const result = await contract.submitTransaction(functionName, ...args);
-  return result.length > 0 ? JSON.parse(result.toString()) : null;
+  return result.length > 0 ? JSON.parse(Buffer.from(result).toString()) : null;
 }
 
 /**
@@ -87,7 +87,7 @@ async function submitTransaction(functionName, ...args) {
 async function evaluateTransaction(functionName, ...args) {
   const contract = await getContract();
   const result = await contract.evaluateTransaction(functionName, ...args);
-  return result.length > 0 ? JSON.parse(result.toString()) : null;
+  return result.length > 0 ? JSON.parse(Buffer.from(result).toString()) : null;
 }
 
 /**

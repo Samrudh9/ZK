@@ -1,0 +1,7 @@
+{
+  "index": {
+    "fields": ["docType", "patientIdHash", "createdAt"]
+  },
+  "name": "policyByPatient",
+  "type": "json"
+}
