@@ -1,0 +1,21 @@
+{
+  "name": "zkhealthpass-chaincode",
+  "version": "1.0.0",
+  "description": "ZKHealthPass access-control chaincode for Hyperledger Fabric 2.5",
+  "main": "index.js",
+  "scripts": {
+    "start": "fabric-chaincode-node server",
+    "start:dev": "fabric-chaincode-node start",
+    "test": "jest --runInBand --forceExit"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.4",
+    "fabric-shim": "^2.5.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

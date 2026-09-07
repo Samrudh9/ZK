@@ -90,8 +90,9 @@ access-count limits) on the ledger.
 |-------|--------|-----------|
 | ZK circuits | circom 2.2.3 · Poseidon | Poseidon costs ~240 constraints per 2-input hash vs ~20,000 for SHA-256 |
 | Proof system | Groth16 (snarkjs 0.7.6) | ~200-byte proofs; fastest verification; most mature JS support |
-| Blockchain | Hyperledger Fabric 2.5 (2 orgs × 2 peers, 3 Raft orderers, CouchDB) | Permissioned, identity-controlled, no gas fees |
-| Backend | Node.js 20 · Express (planned) | snarkjs is JS-native; single-language stack |
+| Blockchain | Hyperledger Fabric 2.5 (2 orgs × 2 peers, 3 Raft orderers, CouchDB) | CCaaS deployment model; permissioned, identity-controlled |
+| Backend | Node.js 20 · Express API | Interacts with Fabric via gRPC and handles JWT auth |
+| Frontend | Vite · React · TailwindCSS | Premium glassmorphism UI for patient and provider portals |
 | Trusted setup | Powers of Tau (power 14), local ceremony | Demo-appropriate; see §6 |
 
 ### Repo structure
@@ -101,12 +102,14 @@ circuits/                     ZK circuit sources + trusted setup pipeline
   access_control.circom       access predicate (1,035 constraints)
   hash_check.circom           Poseidon(2) preimage check
   build.sh                    compile → ptau → groth16 setup → artifacts
-backend/
+backend/                      Express.js REST API bridging snarkjs and Fabric
   src/services/proof.service.js    generateProof / verifyProof / hashIds
   src/circuits/                    compiled artifacts (wasm, zkey, vkey)
   test/proof.test.js               Jest suite (4 tests)
-  scripts/demo-proof.js            end-to-end CLI demonstration
+chaincode/                    Node.js Smart Contracts (CCaaS mode)
 fabric-network/               Fabric 2.5 network configs + bootstrap scripts
+frontend/                     Vite + React Dashboard Application
+doc/                          Project specifications, status, and architecture docs
 ```
 
 ## 5. Experimental Evaluation
@@ -144,11 +147,9 @@ stable identity hashes.
 
 ## 7. Future Work
 
-- Chaincode implementation and backend REST API (consent, proof, audit).
-- Patient / provider / developer web portals.
-- End-to-end performance benchmarking under load (50+ concurrent verifications)
-  and comparison against baseline systems from the literature.
+- End-to-end performance benchmarking under heavy load (100+ concurrent verifications) and comparison against baseline systems from the literature.
 - Formal verification of circuit constraints; migration to a public ptau.
+- Integration of fully homomorphic encryption (FHE) alongside ZKPs.
 - FHIR-aligned record formats and EHR system adapters.
 
 ## 8. Reproduction
@@ -160,11 +161,19 @@ Requires Node.js ≥ 20, circom ≥ 2.1.6 (prebuilt binaries available on the
 # 1. Build the circuit + trusted setup (downloads or generates ptau, ~170 MB)
 cd circuits && ./build.sh
 
-# 2. Backend deps and test suite
-cd ../backend && npm install && npm test
+# 2. Setup and launch Fabric Network & Chaincode
+cd ../fabric-network
+./scripts/setup-network.sh
+./scripts/create-channel.sh
+./scripts/enroll-admin.sh
+./scripts/deploy-chaincode.sh
 
-# 3. End-to-end pipeline demo (generate → verify → tamper-reject)
-node scripts/demo-proof.js
+# 3. Start Backend Server
+cd ../backend && npm install && npm run dev
+
+# 4. Start Frontend Application
+cd ../frontend && npm install && npm run dev
+# (App available at http://localhost:5173)
 ```
 
 ---

@@ -145,6 +145,7 @@ Channel: &ChannelDefaults
 Profiles:
   TwoOrgsOrdererGenesis:
     <<: *ChannelDefaults
+    Capabilities: *ChannelCapabilities
     Orderer:
       <<: *OrdererDefaults
       Organizations:
@@ -159,6 +160,7 @@ Profiles:
   TwoOrgsChannel:
     Consortium: HealthConsortium
     <<: *ChannelDefaults
+    Capabilities: *ChannelCapabilities
     Application:
       <<: *ApplicationDefaults
       Organizations:

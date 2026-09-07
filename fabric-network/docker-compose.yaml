@@ -43,8 +43,6 @@ services:
       - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
       - ORDERER_GENERAL_BOOTSTRAPFILE=/var/hyperledger/orderer/orderer.genesis.block
-      - ORDERER_GENERAL_CLUSTER_LISTENADDRESS=0.0.0.0
-      - ORDERER_GENERAL_CLUSTER_LISTENPORT=7053
     working_dir: /root
     command: orderer
     volumes:
@@ -75,8 +73,6 @@ services:
       - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
       - ORDERER_GENERAL_BOOTSTRAPFILE=/var/hyperledger/orderer/orderer.genesis.block
-      - ORDERER_GENERAL_CLUSTER_LISTENADDRESS=0.0.0.0
-      - ORDERER_GENERAL_CLUSTER_LISTENPORT=7053
     working_dir: /root
     command: orderer
     volumes:
@@ -107,8 +103,6 @@ services:
       - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
       - ORDERER_GENERAL_BOOTSTRAPFILE=/var/hyperledger/orderer/orderer.genesis.block
-      - ORDERER_GENERAL_CLUSTER_LISTENADDRESS=0.0.0.0
-      - ORDERER_GENERAL_CLUSTER_LISTENPORT=7053
     working_dir: /root
     command: orderer
     volumes:
@@ -206,8 +200,9 @@ services:
     container_name: peer0.org1.example.com
     image: hyperledger/fabric-peer:2.5.4
     environment:
-      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_ENDPOINT=unix:///run/docker.sock
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${COMPOSE_PROJECT_NAME}_zkhealth_fabric
+      - DOCKER_API_VERSION=1.41
       - FABRIC_LOGGING_SPEC=INFO
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=true
@@ -231,6 +226,7 @@ services:
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
+      - /var/run/docker.sock:/run/docker.sock
       - ./crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/fabric/msp
       - ./crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.org1.example.com:/var/hyperledger/production
@@ -246,8 +242,9 @@ services:
     container_name: peer1.org1.example.com
     image: hyperledger/fabric-peer:2.5.4
     environment:
-      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_ENDPOINT=unix:///run/docker.sock
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${COMPOSE_PROJECT_NAME}_zkhealth_fabric
+      - DOCKER_API_VERSION=1.41
       - FABRIC_LOGGING_SPEC=INFO
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=true
@@ -271,6 +268,7 @@ services:
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
+      - /var/run/docker.sock:/run/docker.sock
       - ./crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/msp:/etc/hyperledger/fabric/msp
       - ./crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls:/etc/hyperledger/fabric/tls
       - peer1.org1.example.com:/var/hyperledger/production
@@ -287,8 +285,9 @@ services:
     container_name: peer0.org2.example.com
     image: hyperledger/fabric-peer:2.5.4
     environment:
-      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_ENDPOINT=unix:///run/docker.sock
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${COMPOSE_PROJECT_NAME}_zkhealth_fabric
+      - DOCKER_API_VERSION=1.41
       - FABRIC_LOGGING_SPEC=INFO
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=true
@@ -312,6 +311,7 @@ services:
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
+      - /var/run/docker.sock:/run/docker.sock
       - ./crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp:/etc/hyperledger/fabric/msp
       - ./crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.org2.example.com:/var/hyperledger/production
@@ -327,8 +327,9 @@ services:
     container_name: peer1.org2.example.com
     image: hyperledger/fabric-peer:2.5.4
     environment:
-      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_ENDPOINT=unix:///run/docker.sock
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${COMPOSE_PROJECT_NAME}_zkhealth_fabric
+      - DOCKER_API_VERSION=1.41
       - FABRIC_LOGGING_SPEC=INFO
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=true
@@ -352,6 +353,7 @@ services:
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
+      - /var/run/docker.sock:/run/docker.sock
       - ./crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp:/etc/hyperledger/fabric/msp
       - ./crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls:/etc/hyperledger/fabric/tls
       - peer1.org2.example.com:/var/hyperledger/production
@@ -372,13 +374,14 @@ services:
     environment:
       - GOPATH=/opt/gopath
       - FABRIC_LOGGING_SPEC=INFO
-      - FABRIC_CFG_PATH=/etc/hyperledger/peer
+      - FABRIC_CFG_PATH=/var/hyperledger/fabric/config
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
     command: /bin/bash
     volumes:
       - ./:/opt/fabric-network
       - ../chaincode:/opt/chaincode
       - /var/run/docker.sock:/host/var/run/docker.sock
+      - /var/run/docker.sock:/run/docker.sock
     depends_on:
       - peer0.org1.example.com
       - peer1.org1.example.com

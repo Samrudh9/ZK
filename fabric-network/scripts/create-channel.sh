@@ -15,8 +15,8 @@ ARTIFACTS="/opt/fabric-network/channel-artifacts"
 # Paths inside the cli container
 ORG1_ADMIN_MSP="/opt/fabric-network/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp"
 ORG2_ADMIN_MSP="/opt/fabric-network/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp"
-ORG1_CA="/opt/fabric-network/crypto-config/peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
-ORG2_CA="/opt/fabric-network/crypto-config/peerOrganizations/org2.example.com/ca/ca.org2.example.com-cert.pem"
+ORG1_CA="/opt/fabric-network/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"
+ORG2_CA="/opt/fabric-network/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"
 
 docker exec cli peer version >/dev/null 2>&1 || {
   echo "ERROR: cli container not running. Did setup-network.sh finish?"; exit 1
@@ -30,7 +30,7 @@ docker exec \
   -e CORE_PEER_MSPCONFIGPATH="${ORG1_ADMIN_MSP}" \
   -e CORE_PEER_ADDRESS=peer0.org1.example.com:7051 \
   -e CORE_PEER_TLS_ROOTCERT_FILE="${ORG1_CA}" \
-  -e FABRIC_CFG_PATH=/etc/hyperledger/peer \
+  -e FABRIC_CFG_PATH=/var/hyperledger/fabric/config \
   cli peer channel create \
     -o "${ORDERER_ADDR}" \
     --ordererTLSHostnameOverride orderer0.example.com \
@@ -48,7 +48,7 @@ for peer in peer0.org1.example.com:7051 peer1.org1.example.com:7051; do
     -e CORE_PEER_MSPCONFIGPATH="${ORG1_ADMIN_MSP}" \
     -e CORE_PEER_ADDRESS="${peer}" \
     -e CORE_PEER_TLS_ROOTCERT_FILE="${ORG1_CA}" \
-    -e FABRIC_CFG_PATH=/etc/hyperledger/peer \
+    -e FABRIC_CFG_PATH=/var/hyperledger/fabric/config \
     cli peer channel join -b "${ARTIFACTS}/healthchannel.block"
 done
 
@@ -61,7 +61,7 @@ for peer in peer0.org2.example.com:7051 peer1.org2.example.com:7051; do
     -e CORE_PEER_MSPCONFIGPATH="${ORG2_ADMIN_MSP}" \
     -e CORE_PEER_ADDRESS="${peer}" \
     -e CORE_PEER_TLS_ROOTCERT_FILE="${ORG2_CA}" \
-    -e FABRIC_CFG_PATH=/etc/hyperledger/peer \
+    -e FABRIC_CFG_PATH=/var/hyperledger/fabric/config \
     cli peer channel join -b "${ARTIFACTS}/healthchannel.block"
 done
 
@@ -73,7 +73,7 @@ docker exec \
   -e CORE_PEER_MSPCONFIGPATH="${ORG1_ADMIN_MSP}" \
   -e CORE_PEER_ADDRESS=peer0.org1.example.com:7051 \
   -e CORE_PEER_TLS_ROOTCERT_FILE="${ORG1_CA}" \
-  -e FABRIC_CFG_PATH=/etc/hyperledger/peer \
+  -e FABRIC_CFG_PATH=/var/hyperledger/fabric/config \
   cli peer channel update \
     -o "${ORDERER_ADDR}" \
     --ordererTLSHostnameOverride orderer0.example.com \
@@ -88,7 +88,7 @@ docker exec \
   -e CORE_PEER_MSPCONFIGPATH="${ORG2_ADMIN_MSP}" \
   -e CORE_PEER_ADDRESS=peer0.org2.example.com:7051 \
   -e CORE_PEER_TLS_ROOTCERT_FILE="${ORG2_CA}" \
-  -e FABRIC_CFG_PATH=/etc/hyperledger/peer \
+  -e FABRIC_CFG_PATH=/var/hyperledger/fabric/config \
   cli peer channel update \
     -o "${ORDERER_ADDR}" \
     --ordererTLSHostnameOverride orderer0.example.com \
@@ -104,7 +104,7 @@ docker exec \
   -e CORE_PEER_MSPCONFIGPATH="${ORG1_ADMIN_MSP}" \
   -e CORE_PEER_ADDRESS=peer0.org1.example.com:7051 \
   -e CORE_PEER_TLS_ROOTCERT_FILE="${ORG1_CA}" \
-  -e FABRIC_CFG_PATH=/etc/hyperledger/peer \
+  -e FABRIC_CFG_PATH=/var/hyperledger/fabric/config \
   cli peer channel list
 
 docker exec \
@@ -113,7 +113,7 @@ docker exec \
   -e CORE_PEER_MSPCONFIGPATH="${ORG1_ADMIN_MSP}" \
   -e CORE_PEER_ADDRESS=peer0.org1.example.com:7051 \
   -e CORE_PEER_TLS_ROOTCERT_FILE="${ORG1_CA}" \
-  -e FABRIC_CFG_PATH=/etc/hyperledger/peer \
+  -e FABRIC_CFG_PATH=/var/hyperledger/fabric/config \
   cli peer channel getinfo -c "${CHANNEL}"
 
 echo ""

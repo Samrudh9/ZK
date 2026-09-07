@@ -33,6 +33,8 @@ fabric-network/wallets/
 
 # Local tooling (downloaded binaries)
 tools/
+bin/
+install-fabric.sh
 
 # OS
 .DS_Store
