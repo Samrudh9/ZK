@@ -1,12 +1,5 @@
 'use strict';
 
-const { buildAuditEvent, emitAuditEvent } = require('./auditLogger');
-const {
-  validatePolicyParams,
-  computePolicyHash,
-  isPolicyActive,
-} = require('./consentManager');
-
 /**
  * Consent policy states (terminal states cannot transition out).
  */

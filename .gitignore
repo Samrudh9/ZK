@@ -13,6 +13,7 @@ npm-debug.log*
 *.log
 jest.log
 jest.err.log
+frontend/dist/
 
 # Environment
 .env
