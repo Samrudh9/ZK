@@ -1,0 +1,7 @@
+{
+  "index": {
+    "fields": ["docType", "patientIdHash", "timestamp"]
+  },
+  "name": "auditByPatient",
+  "type": "json"
+}

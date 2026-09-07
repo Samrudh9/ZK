@@ -1,0 +1,7 @@
+{
+  "index": {
+    "fields": ["docType", "createdAt"]
+  },
+  "name": "policyByCreated",
+  "type": "json"
+}

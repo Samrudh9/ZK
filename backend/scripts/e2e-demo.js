@@ -72,18 +72,55 @@ function newGateway(org) {
 
 async function submit(contract, fcn, ...args) {
   const res = await contract.submitTransaction(fcn, ...args);
-  return res.length ? JSON.parse(res.toString()) : null;
+  return res.length ? JSON.parse(Buffer.from(res).toString()) : null;
 }
 
 async function evaluate(contract, fcn, ...args) {
   const res = await contract.evaluateTransaction(fcn, ...args);
-  return res.length ? JSON.parse(res.toString()) : null;
+  return res.length ? JSON.parse(Buffer.from(res).toString()) : null;
+}
+
+/**
+ * Ensure the CouchDB indexes the rich queries need exist. Idempotent —
+ * recreating an existing index returns HTTP 200. Databases are created
+ * on demand so this works on a freshly bootstrapped network too.
+ */
+async function ensureCouchIndexes() {
+  const db = 'healthchannel_access$control'; // Fabric encodes '_' as '$'
+  const indexes = [
+    { name: 'auditByTimestamp', fields: ['docType', 'timestamp'] },
+    { name: 'auditByPatient', fields: ['docType', 'patientIdHash', 'timestamp'] },
+    { name: 'policyByCreated', fields: ['docType', 'createdAt'] },
+    { name: 'policyByPatient', fields: ['docType', 'patientIdHash', 'createdAt'] },
+  ];
+  const hosts = (process.env.COUCHDB_HOSTS || 'couchdb0:5984,couchdb2:5984').split(',');
+
+  for (const host of hosts) {
+    let created = await fetch(`http://${host}/${db}`).then((r) => r.status === 200);
+    if (!created) {
+      const mk = await fetch(`http://${host}/${db}`, { method: 'PUT' });
+      created = mk.status === 201;
+    }
+    if (!created) continue;
+    for (const ix of indexes) {
+      await fetch(`http://${host}/${db}/_index`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index: { fields: ix.fields }, name: ix.name, type: 'json' }),
+      });
+    }
+  }
 }
 
 (async () => {
   console.log('='.repeat(72));
   console.log(' ZKHealthPass — live end-to-end demo (Fabric 2.5 + Groth16)');
   console.log('='.repeat(72));
+
+  // ── 0. CouchDB indexes (idempotent; required for rich queries) ─────
+  console.log('\n[0] COUCHDB INDEXES (rich queries)');
+  await ensureCouchIndexes();
+  console.log('  ensured on couchdb0 / couchdb2');
 
   // ── 1. ZK proof production ───────────────────────────────────────────
   console.log('\n[1] PROOF PIPELINE');
@@ -144,8 +181,10 @@ async function evaluate(contract, fcn, ...args) {
     await submit(provider.contract, 'VerifyAndGrantAccess', proofId, created.policyId, `provider-${PROVIDER_ID}`);
     console.log('  ⚠ UNEXPECTED — replay was accepted!');
   } catch (err) {
-    const msg = String(err.details || err.message);
-    console.log(`  rejected ✓ (${msg.split(':').slice(0, 2).join(':')})`);
+    const detail = Array.isArray(err.details) && err.details[0]
+      ? err.details[0].message || err.details[0]
+      : (err.details || err.message);
+    console.log(`  rejected ✓ (${String(detail).split(':').slice(0, 2).join(':')})`);
   }
 
   // ── 5. Ledger state & audit trail ────────────────────────────────────

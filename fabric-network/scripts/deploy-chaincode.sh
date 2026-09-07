@@ -41,6 +41,9 @@ run_cli() { # $1 = MSPID, $2 = admin MSP path, $3 = peer address, $4 = peer TLS 
 # ── Step 1: Build CCaaS package ──────────────────────────────────────
 echo "==> [1/9] building CCaaS chaincode package"
 
+# Chaincode source (for META-INF CouchDB indexes bundled into the package)
+CHAINCODE_SRC="${NETWORK_DIR}/../chaincode/accessControl"
+
 CCAAS_PKGDIR="${NETWORK_DIR}/channel-artifacts/ccaas-pkg"
 rm -rf "${CCAAS_PKGDIR}"
 mkdir -p "${CCAAS_PKGDIR}"
@@ -65,7 +68,10 @@ EOF
 # Create the .tar.gz package (code.tar.gz inside the outer tar.gz)
 pushd "${CCAAS_PKGDIR}" > /dev/null
 tar czf code.tar.gz connection.json
-tar czf "${NETWORK_DIR}/channel-artifacts/${CHAINCODE_LABEL}.tar.gz" code.tar.gz metadata.json
+tar czf "${NETWORK_DIR}/channel-artifacts/${CHAINCODE_LABEL}.tar.gz" \
+  code.tar.gz metadata.json \
+  -C "${CHAINCODE_SRC}" META-INF 2>/dev/null || \
+  tar czf "${NETWORK_DIR}/channel-artifacts/${CHAINCODE_LABEL}.tar.gz" code.tar.gz metadata.json
 popd > /dev/null
 rm -rf "${CCAAS_PKGDIR}"
 
@@ -101,7 +107,6 @@ echo "    package ID: ${PKG_ID}"
 echo "==> [5/9] building and starting chaincode container"
 
 # Build a Docker image for the chaincode
-CHAINCODE_SRC="${NETWORK_DIR}/../chaincode/accessControl"
 CC_IMAGE="zkhealth/accesscontrol-cc:${CHAINCODE_VERSION}"
 
 docker build -t "${CC_IMAGE}" -f - "${CHAINCODE_SRC}" <<'DOCKERFILE'
