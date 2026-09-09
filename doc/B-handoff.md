@@ -1,7 +1,7 @@
 # B-Side Handoff — Frontend Visual Redesign (Round 2)
 
-> From A, to B. Baseline: **`main` @ `cfb8664`** (PR #4 merged; local `main` == `origin/main`).
-> You own the **frontend visual redesign**. You may touch **only `frontend/`**.
+> From A (**Samrudh**), to **B (Sathwik)**. Baseline: **`main` @ `ee22129`** (PR #4 merged; local `main` == `origin/main`).
+> You (Sathwik) own the **frontend visual redesign**. You may touch **only `frontend/`**.
 >
 > **The API contract is FROZEN** (see `doc/teammate-handoff.md` §4). Do not change
 > any call, payload, route, or storage key. If you think something must change,
@@ -32,7 +32,7 @@ authoritative B instruction**.
 
 ---
 
-## B — FULL TASK LIST
+## B — FULL TASK LIST (Sathwik)
 
 ### B1. Design system (foundation — do this FIRST)
 - `frontend/tailwind.config.js`: **replace the cyan/purple glassmorphism** theme

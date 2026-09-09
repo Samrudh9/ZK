@@ -1,10 +1,10 @@
 # ZKHealthPass — Team Guide: Remaining Work (Round 2)
 
-> Status baseline (local `main` == `origin/main` @ `cf7c8f9`, PR #4 merged).
+> Status baseline (local `main` == `origin/main` @ `ee22129`, PR #4 merged).
 > API contract is **frozen** (see `doc/teammate-handoff.md` §4). Neither side changes it.
 >
-> - **A = backend + infra + verification** (does NOT touch `frontend/`)
-> - **B = frontend** — B's full instructions live in **`doc/B-handoff.md`** (authoritative for B).
+> - **A = Samrudh** — backend + infra + verification (does NOT touch `frontend/`)
+> - **B = Sathwik** — frontend; B's full instructions live in **`doc/B-handoff.md`** (authoritative for B).
 >
 > Branch rule: **A → `main` directly** (docs/logs/reports only). **B → `feat/frontend-contract` → PR to `main`.** No shared file editing.
 
@@ -19,9 +19,9 @@
 
 ---
 
-## A — YOUR FULL REMAINING TASK LIST
+## A — YOUR FULL REMAINING TASK LIST (Samrudh)
 
-A owns backend health, verification, docs, and repo hygiene. **No `frontend/` changes.**
+A (Samrudh) owns backend health, verification, docs, and repo hygiene. **No `frontend/` changes.**
 
 ### A1. Backend review report (report-only, per earlier decision)
 Produce `doc/backend-review.md` documenting (do NOT fix unless asked):
@@ -60,9 +60,9 @@ Report any backend-side fixes needed back to yourself = do them on `main`.
 
 ---
 
-## B — YOUR FULL REMAINING TASK LIST
+## B — YOUR FULL REMAINING TASK LIST (Sathwik)
 
-B owns the **frontend visual redesign**. Full, authoritative B instructions are in
+B (Sathwik) owns the **frontend visual redesign**. Full, authoritative B instructions are in
 **`doc/B-handoff.md`** (B1 design system → B2 shared components → B3 pages → B4 copy
 pass → B5 hard constraints → B6 integrate/merge → definition of done). Follow that
 file; this guide only tracks the overall round-2 checklist below.
