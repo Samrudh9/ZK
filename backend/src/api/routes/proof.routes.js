@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const authMiddleware = require('../middleware/auth.middleware');
 const requireRole = require('../middleware/role.middleware');
 const { proofLimiter } = require('../middleware/rateLimiter');
@@ -15,9 +16,9 @@ const router = Router();
 router.use(authMiddleware);
 
 // ── Validation schemas ──────────────────────────────────────────────
+// Contract: patientId comes from the JWT, NOT the request body.
 
 const generateProofSchema = z.object({
-  patientId: z.string().min(1),
   providerId: z.string().min(1),
   recordCategories: z.array(z.string()).min(1),
   consentPolicyId: z.string().min(1),
@@ -42,7 +43,7 @@ router.post('/generate', requireRole('PATIENT'), proofLimiter, async (req, res, 
   try {
     const data = generateProofSchema.parse(req.body);
 
-    // Fetch the consent policy to get the policyHash
+    // Fetch the consent policy to get the on-chain policyHash
     const policy = await consentService.getPolicy(data.consentPolicyId);
     if (!policy) {
       return res.status(404).json({
@@ -50,24 +51,30 @@ router.post('/generate', requireRole('PATIENT'), proofLimiter, async (req, res, 
       });
     }
 
-    // Compute Poseidon hashes for circuit inputs
-    const patientIdNum = BigInt('0x' + Buffer.from(data.patientId).toString('hex').substring(0, 16));
-    const providerIdNum = BigInt('0x' + Buffer.from(data.providerId).toString('hex').substring(0, 16));
-    const { patientIdHash, providerIdHash } = proofService.hashIds(patientIdNum, providerIdNum);
+    // Uniform field-safe encoding: patientId from JWT, providerId from body.
+    // The proof commits to Poseidon hashes over these tokens so the patient's
+    // raw identity stays private while the on-chain patientIdHash matches.
+    const patientIdField = proofService.toFieldId(req.user.userId);
+    const providerIdField = proofService.toFieldId(data.providerId);
+    const { patientIdHash, providerIdHash } = proofService.hashIds(patientIdField, providerIdField);
 
-    // Build circuit inputs
-    const nonce = BigInt('0x' + uuidv4().replace(/-/g, '').substring(0, 16));
+    // Bind the proof to THIS policy: full on-chain policyHash reduced to a
+    // field token (mirrors the chaincode commitment, NOT a 16-char truncation).
+    const policyHash = proofService.toFieldToken(policy.policyHash);
+
     const expiryTimestamp = Math.floor(new Date(data.expiry).getTime() / 1000);
-    const policyHashNum = BigInt('0x' + policy.policyHash.substring(0, 16));
+
+    // Fresh nonce per proof → replay + freshness binding on-chain
+    const nonce = proofService.toFieldToken(crypto.randomBytes(32).toString('hex'));
 
     const circuitInputs = {
-      patientId: patientIdNum.toString(),
-      providerId: providerIdNum.toString(),
+      patientId: patientIdField,
+      providerId: providerIdField,
       patientIdHash,
       providerIdHash,
-      policyHash: policyHashNum.toString(),
+      policyHash,
       expiry: expiryTimestamp.toString(),
-      nonce: nonce.toString(),
+      nonce,
     };
 
     // Generate proof
@@ -76,7 +83,8 @@ router.post('/generate', requireRole('PATIENT'), proofLimiter, async (req, res, 
     const proofId = `prf_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
     const generatedAt = new Date().toISOString();
 
-    // Store proof metadata in PostgreSQL
+    // Store proof metadata in PostgreSQL. public_signals is the binding gate:
+    // at verify time the submitted signals must match EXACTLY what was stored.
     try {
       await query(
         `INSERT INTO proof_metadata (proof_id, patient_id, provider_id, policy_id, status, proof_json, public_signals, generated_at, expires_at)
@@ -109,39 +117,76 @@ router.post('/verify', requireRole('PROVIDER'), async (req, res, next) => {
   try {
     const data = verifyProofSchema.parse(req.body);
 
-    // 1. Verify the proof cryptographically (snarkjs)
-    const { isValid, durationMs } = await proofService.verifyProof(data.proof, data.publicSignals);
+    // 1. Load the proof metadata FIRST — it is the binding gate. Without it the
+    //    proof cannot be tied to a policy, so refuse before any crypto work.
+    const { rows } = await query(
+      'SELECT * FROM proof_metadata WHERE proof_id = $1',
+      [data.proofId]
+    );
+    if (rows.length === 0) {
+      return res.status(400).json({
+        error: { code: 'PROOF_METADATA_MISSING', message: 'Cannot find policy for this proof', statusCode: 400 },
+      });
+    }
+    const meta = rows[0];
 
+    // 2. Authorization: only the provider the proof was generated for may redeem it.
+    if (meta.provider_id !== req.user.userId) {
+      return res.status(403).json({
+        error: { code: 'PROOF_NOT_FOR_PROVIDER', message: 'This proof was not issued to this provider', statusCode: 403 },
+      });
+    }
+
+    // 3. Off-chain freshness: proof expires when the requested expiry lapses.
+    if (new Date(meta.expires_at).getTime() < Date.now()) {
+      return res.status(400).json({
+        error: { code: 'PROOF_EXPIRED', message: 'Proof has expired', statusCode: 400 },
+      });
+    }
+
+    // 4. Verify the proof cryptographically (snarkjs).
+    const { isValid, durationMs } = await proofService.verifyProof(data.proof, data.publicSignals);
     if (!isValid) {
       return res.status(400).json({
         error: { code: 'INVALID_PROOF', message: 'zk-SNARK verification failed', statusCode: 400 },
       });
     }
 
-    // 2. Submit to chaincode for stateful checks (replay, policy, expiry)
-    // Look up the policyId from proof metadata
-    let policyId = null;
-    try {
-      const { rows } = await query(
-        'SELECT policy_id FROM proof_metadata WHERE proof_id = $1',
-        [data.proofId]
-      );
-      if (rows.length > 0) policyId = rows[0].policy_id;
-    } catch (dbErr) {
-      logger.warn('Failed to look up proof metadata (non-fatal)', { error: dbErr.message });
-    }
-
-    if (!policyId) {
-      // Try extracting from publicSignals if metadata unavailable
+    // 5. Binding gate: the submitted public signals must match EXACTLY what was
+    //    stored at generate time — the proof commits to this policy, this
+    //    patient, this provider, this expiry, this nonce. public_signals is a
+    //    jsonb column, so pg returns it as a parsed array.
+    const storedSignals = meta.public_signals;
+    const signalsMatch =
+      Array.isArray(storedSignals) &&
+      storedSignals.length === data.publicSignals.length &&
+      storedSignals.every((v, i) => String(v) === String(data.publicSignals[i]));
+    if (!signalsMatch) {
       return res.status(400).json({
-        error: { code: 'PROOF_METADATA_MISSING', message: 'Cannot find policy for this proof', statusCode: 400 },
+        error: { code: 'SIGNAL_MISMATCH', message: 'Public signals do not match the issued proof', statusCode: 400 },
       });
     }
 
+    // 6. Defense in depth: re-derive the policyHash from the ledger and confirm
+    //    the proof commits to it (full token, matching the chaincode commitment).
+    const policy = await consentService.getPolicy(meta.policy_id);
+    if (!policy) {
+      return res.status(404).json({
+        error: { code: 'POLICY_NOT_FOUND', message: 'Consent policy not found', statusCode: 404 },
+      });
+    }
+    if (proofService.toFieldToken(policy.policyHash) !== data.publicSignals[3]) {
+      return res.status(400).json({
+        error: { code: 'POLICY_HASH_MISMATCH', message: 'Proof is not bound to the current consent policy', statusCode: 400 },
+      });
+    }
+
+    // 7. Submit to chaincode for stateful checks (replay, policy active, expiry
+    //    budget). Runs as the PROVIDER org (Org2MSP) identity.
     const chaincodeResult = await fabric.submitTransaction(
       'VerifyAndGrantAccess',
       data.proofId,
-      policyId,
+      meta.policy_id,
       req.user.userId
     );
 

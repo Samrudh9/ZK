@@ -23,20 +23,30 @@ function errorHandler(err, req, res, _next) {
       : 'Request validation failed';
   }
 
+  // Fabric gateway wraps chaincode errors as gRPC "ABORTED" (EndorseError);
+  // the real chaincode message lives in err.details[*].message as
+  // "chaincode response 500, PROOF_REPLAYED: ...". Surface it for mapping.
+  let chaincodeMessage = '';
+  if (err.message && err.message.startsWith('10 ABORTED') && Array.isArray(err.details)) {
+    const detail = err.details.find((d) => d && typeof d.message === 'string');
+    if (detail) chaincodeMessage = detail.message;
+  }
+  const effectiveMessage = chaincodeMessage || message;
+
   // Map known error strings from chaincode
-  if (message.includes('PROOF_REPLAYED')) {
+  if (effectiveMessage.includes('PROOF_REPLAYED')) {
     statusCode = 409;
     code = 'PROOF_REPLAYED';
-  } else if (message.includes('POLICY_INACTIVE')) {
+  } else if (effectiveMessage.includes('POLICY_INACTIVE')) {
     statusCode = 403;
     code = 'POLICY_INACTIVE';
-  } else if (message.includes('POLICY_NOT_FOUND')) {
+  } else if (effectiveMessage.includes('POLICY_NOT_FOUND')) {
     statusCode = 404;
     code = 'POLICY_NOT_FOUND';
-  } else if (message.includes('INVALID_PROOF')) {
+  } else if (effectiveMessage.includes('INVALID_PROOF')) {
     statusCode = 400;
     code = 'INVALID_PROOF';
-  } else if (message.includes('PROOF_EXPIRED')) {
+  } else if (effectiveMessage.includes('PROOF_EXPIRED')) {
     statusCode = 400;
     code = 'PROOF_EXPIRED';
   }
@@ -55,10 +65,20 @@ function errorHandler(err, req, res, _next) {
     });
   }
 
+  // Use the chaincode detail as the reported message when available (clearer
+  // than the gRPC "10 ABORTED" wrapper), stripping any "chaincode response N, "
+  // prefix that grpc-js prepends.
+  let reportMessage = message;
+  if (chaincodeMessage) {
+    reportMessage = chaincodeMessage
+      .replace(/^chaincode response \d+,?\s*/i, '')
+      .trim();
+  }
+
   res.status(statusCode).json({
     error: {
       code,
-      message,
+      message: reportMessage,
       statusCode,
       requestId,
     },

@@ -436,8 +436,14 @@ If the app can't reach the API, first check the mock server logs are printing re
 - Chaincode **enforces MSP per operation**: `CreateConsentPolicy`/`Update`/`Revoke`
   require `Org1MSP`; `VerifyAndGrantAccess` requires `Org2MSP`
   (`chaincode/accessControl/lib/accessControl.js:58,230`).
-  → The REST backend CANNOT keep one identity; A must load both Org1 and Org2
-  identities and pick per operation. This is A work for tomorrow, **not** yours.
+  → The REST backend CANNOT keep one identity.
+- ✅ **DONE (A)**: the real backend now loads **both** Org1 and Org2 identities
+  (`backend/src/services/fabric.service.js` routes each chaincode call to the org
+  that may invoke it). The **real REST stack is verified end-to-end against a live
+  Fabric network**: login → consent create → proof generate → provider verify
+  (`accessGranted:true`) → replay (`409 PROOF_REPLAYED`) → on-chain audit trail.
+  The backend implements the §4 contract exactly (patientId from JWT, 6 public
+  signals, `{valid,accessGranted,authorizedCategories,txId,auditRef}`).
 - The mock runs beside the real app. On integration day, A's real backend replaces
   the mock on the same port — your frontend must work without any contract changes.
 - If A changes the contract while you build, the mock (and this doc) will be updated

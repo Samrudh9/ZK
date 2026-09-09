@@ -3,7 +3,7 @@ const { z } = require('zod');
 const authMiddleware = require('../middleware/auth.middleware');
 const requireRole = require('../middleware/role.middleware');
 const consentService = require('../../services/consent.service');
-const { hashIds } = require('../../services/proof.service');
+const proofService = require('../../services/proof.service');
 
 const router = Router();
 
@@ -32,8 +32,8 @@ const updateConsentSchema = z.object({
 
 router.get('/', requireRole('PATIENT'), async (req, res, next) => {
   try {
-    // Use the patient's ID hash to query their policies
-    const { patientIdHash } = hashIds(req.user.userId, 0);
+    // Use the patient's ID hash to query their policies (uniform field-safe encoding)
+    const { patientIdHash } = proofService.hashIds(proofService.toFieldId(req.user.userId), 0);
     const policies = await consentService.getPoliciesByPatient(patientIdHash);
     res.json(policies || []);
   } catch (err) {
@@ -46,7 +46,7 @@ router.get('/', requireRole('PATIENT'), async (req, res, next) => {
 router.post('/', requireRole('PATIENT'), async (req, res, next) => {
   try {
     const data = createConsentSchema.parse(req.body);
-    const { patientIdHash } = hashIds(req.user.userId, 0);
+    const { patientIdHash } = proofService.hashIds(proofService.toFieldId(req.user.userId), 0);
 
     const result = await consentService.createPolicy({
       patientIdHash,

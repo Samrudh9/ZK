@@ -16,6 +16,14 @@ const envSchema = z.object({
   FABRIC_CERT_PATH: z.string().optional(),
   FABRIC_KEY_DIR: z.string().optional(),
 
+  // Fabric — Org2 (PROVIDER) identity. Required for VerifyAndGrantAccess /
+  // LogAuditEvent: the chaincode enforces MSP per operation.
+  FABRIC_ORG2_MSP: z.string().default('Org2MSP'),
+  FABRIC_ORG2_PEER_ENDPOINT: z.string().default('localhost:9051'),
+  FABRIC_ORG2_TLS_CERT_PATH: z.string().optional(),
+  FABRIC_ORG2_CERT_PATH: z.string().optional(),
+  FABRIC_ORG2_KEY_DIR: z.string().optional(),
+
   // JWT
   JWT_SECRET: z.string().min(16).default('dev-jwt-secret-replace-in-prod'),
   JWT_EXPIRY: z.coerce.number().default(3600),
