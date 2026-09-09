@@ -4,7 +4,7 @@
 > API contract is **frozen** (see `doc/teammate-handoff.md` §4). Neither side changes it.
 >
 > - **A = backend + infra + verification** (does NOT touch `frontend/`)
-> - **B = frontend** (does NOT touch `backend/`, `circuits/`, `chaincode/`, `App.jsx` react-router layout)
+> - **B = frontend** — B's full instructions live in **`doc/B-handoff.md`** (authoritative for B).
 >
 > Branch rule: **A → `main` directly** (docs/logs/reports only). **B → `feat/frontend-contract` → PR to `main`.** No shared file editing.
 
@@ -62,49 +62,10 @@ Report any backend-side fixes needed back to yourself = do them on `main`.
 
 ## B — YOUR FULL REMAINING TASK LIST
 
-B owns the **frontend visual redesign**. You may touch only `frontend/`. The API contract is frozen — keep every call & payload the same.
-
-### B1. Design system (foundation first)
-- `frontend/tailwind.config.js`: replace the **cyan/purple glassmorphism** theme with a professional clinical palette (deep navy/slate base + a single trustworthy medical accent + semantic status colors). Remove glowing gradient blobs.
-- `frontend/src/index.css`: real typography hierarchy (display face + Inter body), spacing scale, remove `animate-fade-in`-style template tells.
-- Introduce reusable theme tokens/classes (surface, border, alert states) instead of ad-hoc Tailwind strings in every file.
-
-### B2. Shared UI components (`frontend/src/components/ui/`)
-Add and reuse (all theme-consistent, all labelled/accessible):
-- `Badge` (status: ACTIVE/REVOKED/EXPIRED etc.)
-- `Toast` (success / error / notice)
-- `EmptyState` (icon + title + helper + action)
-- `Loading` / `Spinner`
-- `Field` (label + input/select/textarea wrapper with error text)
-- `StatCard`, `Modal`/`Confirm`, `ResultPanel`
-Refactor existing `Button`/`Card` to the new theme.
-
-### B3. Pages
-- **Landing page** (`/`): real product hero (zero-knowledge proofs, patient consent, replay protection), CTA to login. Currently `/` auto-redirects to `/login` — add a route, keep login reachable.
-- **Login** (`/login`): cleaner clinic-branded form; keep the patient/provider demo-account quick-switcher (useful for the demo); clearer validation/error presentation.
-- **PatientDashboard**: consent policies list with status badges; add-policy form; proof generation with a clear "bound to policy X" explainer; **share-proof** flow (Copy JSON + JSON preview); honest empty/loading/error + toast states.
-- **ProviderDashboard**: paste-proof verify with real validation/hint; rich ACCESS GRANTED result (authorized categories as chips, tx/audit refs); replay/error states styled distinctly.
-
-### B4. Copy pass
-- Remove template-y strings: "Sign In Securely", "Verify Cryptographic Proof", "premium feel", empty-state filler.
-- Ground the "EHR/records" story in the copy so it reads like a real clinical product, not a demo scaffold.
-
-### B5. Hard constraints (do not break)
-- Keep exact API calls & payloads:
-  - `POST /auth/login` `{ userId, password }`
-  - `GET /consent`, `POST /consent` `{ providerId, allowedCategories, validFrom, validUntil, maxAccessCount }`
-  - `POST /proof/generate` `{ providerId, recordCategories, consentPolicyId, expiry }`
-  - `POST /proof/verify` `{ proofId, proof, publicSignals }`
-- Keep routing used by `ProtectedRoute`: `/login`, `/patient`, `/provider` (+ new `/` landing).
-- Keep `localStorage` keys: `token`, `role` (lowercase), `username`.
-- Keep `frontend/src/services/api.js` interceptor behavior (401 → clear + redirect /login).
-- Do not edit `backend/`, `circuits/`, `chaincode/`, or the router/auth guard logic in `App.jsx`.
-
-### B6. Integrate & merge
-1. Branch from latest `main`: `git checkout -b feat/frontend-contract` (or your existing one, rebased on `main`).
-2. `cd frontend && npm run build` — must pass.
-3. Manually verify against the LIVE backend (backend must be running; ask A to ensure it's up): full patient→provider flow.
-4. Open a **PR → `main`**, mention A for review. Keep the PR scoped to `frontend/` only.
+B owns the **frontend visual redesign**. Full, authoritative B instructions are in
+**`doc/B-handoff.md`** (B1 design system → B2 shared components → B3 pages → B4 copy
+pass → B5 hard constraints → B6 integrate/merge → definition of done). Follow that
+file; this guide only tracks the overall round-2 checklist below.
 
 ---
 
