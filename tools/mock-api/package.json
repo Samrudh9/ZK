@@ -1,0 +1,17 @@
+{
+  "name": "zkhealthpass-mock-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "In-memory mock of the ZKHealthPass backend REST API for local frontend development (no Fabric/Postgres needed).",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
