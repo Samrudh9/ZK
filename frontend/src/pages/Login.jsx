@@ -20,19 +20,19 @@ export function Login() {
 
     try {
       // Use the actual backend API for auth
-      const res = await api.post('/auth/login', { username, password, role });
-      
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', res.data.role);
-      localStorage.setItem('username', res.data.username);
-      
-      if (res.data.role === 'patient') {
+      const res = await api.post('/auth/login', { userId: username, password });
+
+      localStorage.setItem('token', res.data.accessToken);
+      localStorage.setItem('role', res.data.role.toLowerCase());
+      localStorage.setItem('username', username);
+
+      if (res.data.role.toLowerCase() === 'patient') {
         navigate('/patient');
       } else {
         navigate('/provider');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to login');
+      setError(err.response?.data?.error?.message || 'Failed to login');
     } finally {
       setLoading(false);
     }

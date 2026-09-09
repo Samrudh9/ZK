@@ -14,6 +14,15 @@ function errorHandler(err, req, res, _next) {
   let code = err.code || 'INTERNAL_ERROR';
   let message = err.message || 'An unexpected error occurred';
 
+  // Map zod validation failures to a clean 400 (matches the API contract)
+  if (err.name === 'ZodError') {
+    statusCode = 400;
+    code = 'VALIDATION';
+    message = err.issues
+      ? err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
+      : 'Request validation failed';
+  }
+
   // Map known error strings from chaincode
   if (message.includes('PROOF_REPLAYED')) {
     statusCode = 409;

@@ -278,7 +278,14 @@ callback — keep it simple.)
 
 ### 6.2 `Login.jsx` — align with contract
 
-Target behavior:
+> **UPDATE (2026-09-09):** the base contract fix for this page is ALREADY LANDED on
+> `main` (correct `{userId, password}` body, stores `accessToken`, routes on
+> `role.toLowerCase()`). Before you start, `git pull` into your branch. What's still
+> **your** job for the auth layer: the **401 → redirect to login** handling in
+> `api.js` (§6.1). If you already wrote this page, diff against `main` to avoid
+> conflicts.
+
+Target behavior (reference for the already-landed change):
 - Keep the two role buttons (Patient / Provider) but they can just set the demo user+password:
   - Patient → `userId: alice`, `password: alicepw`
   - Provider → `userId: drbob`, `password: bobpw`
