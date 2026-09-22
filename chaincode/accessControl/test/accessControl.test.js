@@ -232,5 +232,22 @@ describe('AccessControlContract', () => {
       const res = JSON.parse(await contract.GetProofStatus(ctx, 'proof_never_used'));
       expect(res.status).toBe('UNUSED');
     });
+
+    test('reads a single audit event by ID', async () => {
+      asProvider();
+      await contract.LogAuditEvent(ctx, JSON.stringify({
+        auditId: 'aud_readable',
+        action: 'RECORD_VIEWED',
+        patientIdHash: PATIENT_HASH,
+        providerId: PROVIDER,
+      }));
+      const got = JSON.parse(await contract.GetAuditEvent(ctx, 'aud_readable'));
+      expect(got.auditId).toBe('aud_readable');
+      expect(got.action).toBe('RECORD_VIEWED');
+    });
+
+    test('throws when an audit event ID does not exist', async () => {
+      await expect(contract.GetAuditEvent(ctx, 'aud_missing')).rejects.toThrow('Audit event aud_missing not found');
+    });
   });
 });

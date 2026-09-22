@@ -11,7 +11,6 @@ const registerSchema = z.object({
   userId: z.string().min(1).max(255),
   password: z.string().min(8).max(128),
   role: z.enum(['PATIENT', 'PROVIDER']),
-  orgId: z.string().default('Org1MSP'),
 });
 
 const loginSchema = z.object({

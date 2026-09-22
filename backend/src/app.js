@@ -10,7 +10,6 @@ const errorHandler = require('./api/middleware/errorHandler');
 const authRoutes = require('./api/routes/auth.routes');
 const consentRoutes = require('./api/routes/consent.routes');
 const proofRoutes = require('./api/routes/proof.routes');
-const recordsRoutes = require('./api/routes/records.routes');
 const auditRoutes = require('./api/routes/audit.routes');
 
 const app = express();
@@ -37,7 +36,6 @@ const apiRouter = express.Router();
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/consent', consentRoutes);
 apiRouter.use('/proof', proofRoutes);
-apiRouter.use('/records', recordsRoutes);
 apiRouter.use('/audit', auditRoutes);
 
 app.use('/v1', apiRouter);

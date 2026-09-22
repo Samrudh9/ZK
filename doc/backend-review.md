@@ -1,57 +1,58 @@
 # Backend Review Report — ZKHealthPass
 
-> Scope: A-side review of the backend (`backend/`). **Report only** — findings are
-> documented here for decision; no code changes made in this pass.
-> Baseline: `main` @ `cf7c8f9` (backend works live end-to-end; 21 tests green).
+> Scope: A-side review of the backend (`backend/`). Findings below have been
+> **resolved** in this pass (Round 2, commit post-`dba1bfd`): F1–F3 fixed,
+> chaincode upgraded to v1.2 (sequence 4), and E2E re-verified live.
+> Baseline: `main` @ `dba1bfd`.
 
 ---
 
 ## Summary
 
 The core backend is functional and verified: dual-identity Fabric gateway,
-contract-aligned proof flow, replay → `409`, live audit trail, 21 passing tests.
-The items below are **quality / correctness gaps**, not blockers. They fall into
-three buckets: (1) leftover demo scaffolding, (2) two real logic bugs in
-lower-traffic paths, (3) documentation accuracy.
+contract-aligned proof flow, replay → `409`, live audit trail, and tests.
+**Round 2 action taken:** the items below are now fixed (see **Resolution**
+under each), chaincode upgraded to **v1.2 (sequence 4)**, and the full backend
+suite (21) + chaincode suite (43) pass. Live REST E2E re-verified: login →
+consent create → proof generate → provider verify → replay `409` →
+`GET /audit/:auditId` returns the real on-chain event.
 
 ---
 
-## Findings
+## Findings (now resolved)
 
-### F1 — `records.routes.js` is demo scaffolding, inconsistent with the real flow
-- `GET /records` returns a **hardcoded mock list**
-  (`rec_1`/`rec_2`, categories `CARDIOLOGY`/`GENERAL`) — the "EHR database" is imaginary.
-- `POST /records/register` writes a fabricated audit event with
-  `patientIdHash: 'N/A'` and a made-up `RECORD_REGISTERED` action — this is not a
-  real patient/proof-bound event and pollutes the audit trail.
-- **Impact:** if the demo/narrative spins "provider reads patient records", this
-  route fakes it. It does not match the ZK consent→proof story.
-- **Options:** (a) remove `/records`; (b) ground it in a real off-chain EHR store
-  keyed by category AFTER a verified access; (c) leave as an explicitly-labelled
-  mock. Not blocking.
+### F1 — `records.routes.js` demo scaffolding (RESOLVED: removed)
+- `GET /records` returned a hardcoded mock list; `POST /records/register`
+  wrote a fabricated audit event with `patientIdHash: 'N/A'`.
+- Not in the frozen contract, unused by the frontend, and it polluted the audit
+  trail. **Action:** deleted `records.routes.js` and its `/records` mount in
+  `backend/src/app.js`.
 
-### F2 — `audit.service.js getAuditEvent` queries the wrong chaincode function (real bug)
-- `getAuditEvent(auditId)` calls `fabric.evaluateTransaction('QueryConsentPolicy', auditId)`.
-- `QueryConsentPolicy` expects a **policy id**, not an **audit id** — so it can never
-  return an audit event (`docType === 'auditEvent'` is unreachable via this path).
-  The enrichment branch and fallback mask this, returning stale/empty data.
-- **Fix (when actioned):** query the ledger for the audit doc by `auditId`
-  (there is an on-chain audit store; the correct read should target that
-  document type) before enrichment.
+### F2 — `audit.service.js getAuditEvent` wrong chaincode function (RESOLVED)
+- Previously called `fabric.evaluateTransaction('QueryConsentPolicy', auditId)`
+  with an audit id — semantically wrong (sets an audit id where a policy id is
+  expected) and could never yield the audit document.
+- **Action:** added `GetAuditEvent(ctx, auditId)` to the chaincode (raw-key
+  read of the audit doc) + 2 unit tests; `audit.service.js` now calls
+  `GetAuditEvent`. Verified live: `GET /v1/audit/:auditId` returns the real
+  `ACCESS_GRANTED` event.
+- **Bonus fix found during E2E:** the contract generated timestamps with
+  `new Date().toISOString()` inside the chaincode — non-deterministic across
+  endorsers under the multi-org endorsement policy
+  (`AND(Org1MSP, Org2MSP)` decoded), causing `ProposalResponsePayloads do not
+  match`. Replaced all internal timestamps with `ctx.stub.getTxTimestamp()`
+  (identical across endorsers). Chaincode now **v1.2 / sequence 4**.
 
-### F3 — `auth.routes.js` register org mapping inconsistency (minor)
-- `registerSchema` defaults `orgId: 'Org1MSP'` (zod default), but the route
-  overrides it: `const orgId = data.role === 'PROVIDER' ? 'Org2MSP' : 'Org1MSP';`.
-- The schema default is misleading/dead. **Fix:** drop the schema default or
-  remove the redundant override; document the intended mapping (PATIENT→Org1MSP,
-  PROVIDER→Org2MSP).
+### F3 — `auth.routes.js` register org mapping inconsistency (RESOLVED)
+- `registerSchema` had a dead `orgId: z.string().default('Org1MSP')` that the
+  route always overwrote (PROVIDER → Org2MSP). Misleading.
+- **Action:** removed `orgId` from the schema. Role→org mapping is now the
+  single source of truth. Verified live: register + login of a new PATIENT work
+  without sending `orgId`.
 
 ### F4 — Documentation accuracy
-- `doc/status.md` is **gitignored** (local-only) and still claims
-  "100% / Complete" while the visual redesign and final demo remain open.
-- Recommend: keep `status.md` local (as currently configured) and track real
-  progress in the weekly logs (`doc/logs/week-NN.md`) + `doc/guide.md`.
-- README/`status.md` otherwise reflect the verified backend work.
+- `doc/status.md` is gitignored (local-only). Progress is tracked in the
+  weekly logs + `doc/guide.md` + this report; status.md remains local.
 
 ---
 
@@ -59,15 +60,16 @@ lower-traffic paths, (3) documentation accuracy.
 - Dual-identity Fabric gateway (`fabric.service.js`) — per-org MSP routing correct.
 - Proof route: JWT patientId, full `policyHash` field-token binding, stored-signal
   gate, provider authorization, replay `409` via gRPC detail unwrapping.
-- Error handler maps chaincode detail messages (`PROOF_REPLAYED`, `POLICY_INACTIVE`,
-  `POLICY_NOT_FOUND`, `PROOF_EXPIRED`) to correct HTTP codes.
+- Error handler maps chaincode detail messages to correct HTTP codes.
 - Circuit artifact paths are CWD-independent; vkey read via `fs`.
 - Route contract tests (`auth`, `consent`, `proof`) + `proof.service` suite: 21 green.
+- Chaincode suite (`accessControl` + `consentManager`): 43 green.
 
 ---
 
-## Recommended priority (if/when actioned)
-1. **F2** (real bug — fix next backend pass).
-2. **F3** (1-line clarity fix).
-3. **F1** (decide: remove, ground, or relabel the mock).
-4. **F4** (docs — ongoing via logs/guide; status.md stays local).
+## Round-2 verification summary (live, this pass)
+- `accessControl` chaincode upgraded 1.0 → **1.2 (sequence 4)**, both orgs approved.
+- Backend :3001 (nodemon), Postgres :5433 (zk-zh-db), all 4 peers + orderers up, CouchDB indexes present.
+- Live E2E: consent create ACTIVE → proof generate (6 signals) → provider verify
+  `accessGranted: true` (LAB, RADIOLOGY) → replay **409 PROOF_REPLAYED** →
+  `GET /v1/audit/:auditId` returns `ACCESS_GRANTED`; fresh register (no orgId) logs in.

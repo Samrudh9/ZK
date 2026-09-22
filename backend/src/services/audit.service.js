@@ -19,8 +19,7 @@ async function queryAuditTrail(filters = {}) {
 async function getAuditEvent(auditId) {
   // Try Fabric first
   try {
-    const result = await fabric.evaluateTransaction('QueryConsentPolicy', auditId);
-    // If it's an audit event (docType check)
+    const result = await fabric.evaluateTransaction('GetAuditEvent', auditId);
     if (result && result.docType === 'auditEvent') {
       // Enrich from PostgreSQL
       const enrichment = await getEnrichment(auditId);

@@ -33,6 +33,19 @@ class AccessControlContract extends Contract {
     return ctx.clientIdentity.getMSPID();
   }
 
+  /**
+   * Deterministic transaction timestamp (ISO-8601).
+   * Uses the tx header timestamp which is identical across all endorsing peers;
+   * `new Date()` inside a contract is NON-DETERMINISTIC and breaks endorsement
+   * ("ProposalResponsePayloads do not match") under multi-org policies.
+   */
+  _txTimestampISO(ctx) {
+    const ts = ctx.stub.getTxTimestamp();
+    const seconds = ts.seconds.low;
+    const millis = seconds * 1000 + Math.floor(ts.nanos / 1e6);
+    return new Date(millis).toISOString();
+  }
+
   /** Enforce that the caller belongs to the given MSP. */
   _requireMSP(ctx, mspId, action) {
     const caller = this._callerMSP(ctx);
@@ -81,8 +94,8 @@ class AccessControlContract extends Contract {
       maxAccessCount: params.maxAccessCount || 0,
       accessCount: 0,
       status: PolicyStatus.ACTIVE,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: this._txTimestampISO(ctx),
+      updatedAt: this._txTimestampISO(ctx),
     };
 
     await this._putJSON(ctx, params.policyId, policy);
@@ -97,7 +110,7 @@ class AccessControlContract extends Contract {
       action: 'CONSENT_CREATED',
       policyId: params.policyId,
       txId,
-      timestamp: new Date().toISOString(),
+      timestamp: this._txTimestampISO(ctx),
     });
     await this._putJSON(ctx, audit.auditId, audit);
     emitAuditEvent(ctx, 'ConsentCreated', audit);
@@ -156,7 +169,7 @@ class AccessControlContract extends Contract {
 
     // Recompute hash after update
     policy.policyHash = computePolicyHash(policy);
-    policy.updatedAt = new Date().toISOString();
+    policy.updatedAt = this._txTimestampISO(ctx);
 
     await this._putJSON(ctx, policyId, policy);
 
@@ -183,8 +196,8 @@ class AccessControlContract extends Contract {
     }
 
     policy.status = PolicyStatus.REVOKED;
-    policy.revokedAt = new Date().toISOString();
-    policy.updatedAt = new Date().toISOString();
+    policy.revokedAt = this._txTimestampISO(ctx);
+    policy.updatedAt = this._txTimestampISO(ctx);
 
     await this._putJSON(ctx, policyId, policy);
 
@@ -198,7 +211,7 @@ class AccessControlContract extends Contract {
       action: 'CONSENT_REVOKED',
       policyId,
       txId,
-      timestamp: new Date().toISOString(),
+      timestamp: this._txTimestampISO(ctx),
     });
     await this._putJSON(ctx, audit.auditId, audit);
     emitAuditEvent(ctx, 'ConsentRevoked', audit);
@@ -245,7 +258,7 @@ class AccessControlContract extends Contract {
       // Update the on-chain status if it drifted (expired/exhausted)
       if (policy.status === PolicyStatus.ACTIVE && status !== PolicyStatus.ACTIVE) {
         policy.status = status;
-        policy.updatedAt = new Date().toISOString();
+        policy.updatedAt = this._txTimestampISO(ctx);
         await this._putJSON(ctx, policyId, policy);
       }
 
@@ -260,7 +273,7 @@ class AccessControlContract extends Contract {
         proofId,
         policyId,
         txId,
-        timestamp: new Date().toISOString(),
+        timestamp: this._txTimestampISO(ctx),
       });
       await this._putJSON(ctx, audit.auditId, audit);
       emitAuditEvent(ctx, 'AccessDenied', audit);
@@ -274,13 +287,13 @@ class AccessControlContract extends Contract {
       Buffer.from(JSON.stringify({
         status: 'CONSUMED',
         policyId,
-        consumedAt: new Date().toISOString(),
+        consumedAt: this._txTimestampISO(ctx),
       }))
     );
 
     // 4. Increment access count
     policy.accessCount = (policy.accessCount || 0) + 1;
-    policy.updatedAt = new Date().toISOString();
+    policy.updatedAt = this._txTimestampISO(ctx);
 
     // Check if this access exhausts the policy
     if (
@@ -303,7 +316,7 @@ class AccessControlContract extends Contract {
       proofId,
       policyId,
       txId,
-      timestamp: new Date().toISOString(),
+      timestamp: this._txTimestampISO(ctx),
     });
     await this._putJSON(ctx, audit.auditId, audit);
     emitAuditEvent(ctx, 'AccessGranted', audit);
@@ -327,7 +340,7 @@ class AccessControlContract extends Contract {
     if (!event.auditId) throw new Error('auditId is required');
 
     event.docType = 'auditEvent';
-    event.timestamp = event.timestamp || new Date().toISOString();
+    event.timestamp = event.timestamp || this._txTimestampISO(ctx);
 
     await this._putJSON(ctx, event.auditId, event);
     emitAuditEvent(ctx, event.action || 'AuditEvent', event);
@@ -408,6 +421,17 @@ class AccessControlContract extends Contract {
     }
     const data = JSON.parse(buf.toString());
     return JSON.stringify({ proofId, status: data.status || 'CONSUMED' });
+  }
+
+  // ── 8.5 GetAuditEvent ─────────────────────────────────────────────
+
+  /**
+   * Read a single audit event by ID.
+   */
+  async GetAuditEvent(ctx, auditId) {
+    const event = await this._getJSON(ctx, auditId);
+    if (!event) throw new Error(`Audit event ${auditId} not found`);
+    return JSON.stringify(event);
   }
 
   // ── Bonus: QueryPoliciesByPatient ─────────────────────────────────

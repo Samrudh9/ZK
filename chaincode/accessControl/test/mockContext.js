@@ -17,6 +17,7 @@ class MockContext {
 
     this.stub = {
       getTxID: () => this._txId,
+      getTxTimestamp: () => ({ seconds: { low: 1758500000, high: 0, unsigned: false }, nanos: 0 }),
       getState: async (key) => {
         const v = this.state.get(key);
         return v ? Buffer.from(v) : undefined;
