@@ -9,6 +9,8 @@
 # v1.1 (seq 3): added GetAuditEvent.
 # v1.2 (seq 4): deterministic tx timestamps (ctx.stub.getTxTimestamp) to fix
 #   endorsement mismatches ("ProposalResponsePayloads do not match").
+# v1.2 (seq 5): re-package re-install after a network outage; seq4 def already
+#   committed, so lifecycle requires the bump.
 #
 # Prereq: the Fabric network (peers/orderers/CouchDB/cli) is already running via
 # `docker compose up -d` in fabric-network/.
@@ -21,7 +23,7 @@ CHANNEL="healthchannel"
 CHAINCODE_NAME="accessControl"
 CHAINCODE_VERSION="1.2"
 CHAINCODE_LABEL="${CHAINCODE_NAME}_${CHAINCODE_VERSION}"
-CHAINCODE_SEQUENCE=4
+CHAINCODE_SEQUENCE=5
 ORDERER_ADDR="orderer0.example.com:7050"
 ORDERER_TLS_CA="/opt/fabric-network/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
 
