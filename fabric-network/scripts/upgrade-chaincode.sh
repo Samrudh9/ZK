@@ -23,7 +23,7 @@ CHANNEL="healthchannel"
 CHAINCODE_NAME="accessControl"
 CHAINCODE_VERSION="1.2"
 CHAINCODE_LABEL="${CHAINCODE_NAME}_${CHAINCODE_VERSION}"
-CHAINCODE_SEQUENCE=5
+CHAINCODE_SEQUENCE=6
 ORDERER_ADDR="orderer0.example.com:7050"
 ORDERER_TLS_CA="/opt/fabric-network/crypto-config/ordererOrganizations/example.com/orderers/orderer0.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
 
