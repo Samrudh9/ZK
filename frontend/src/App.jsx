@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { PatientDashboard } from './pages/PatientDashboard';
 import { ProviderDashboard } from './pages/ProviderDashboard';
@@ -20,7 +21,6 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="bg-blob"></div>
       <Routes>
         <Route path="/login" element={<Login />} />
         
@@ -36,7 +36,7 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Landing />} />
       </Routes>
     </BrowserRouter>
   );

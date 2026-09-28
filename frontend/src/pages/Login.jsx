@@ -1,116 +1,200 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { ShieldCheck, User, Stethoscope, Loader2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { User, Stethoscope, HeartPulse, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Button, Card, Field, Alert } from '../components/ui';
 import api from '../services/api';
+
+const DEMO_ACCOUNTS = {
+  patient: { userId: 'alice', password: 'alicepw', label: 'Patient', Icon: User, blurb: 'Issue consent and generate proofs' },
+  provider: { userId: 'drbob', password: 'bobpw', label: 'Provider', Icon: Stethoscope, blurb: 'Verify proofs submitted by patients' },
+};
 
 export function Login() {
   const navigate = useNavigate();
   const [role, setRole] = useState('patient');
-  const [username, setUsername] = useState('alice'); // default test user
+  const [userId, setUserId] = useState('alice');
   const [password, setPassword] = useState('alicepw');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const selectDemo = (key) => {
+    const acct = DEMO_ACCOUNTS[key];
+    setRole(key);
+    setUserId(acct.userId);
+    setPassword(acct.password);
+    setFieldErrors({});
+    setError('');
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!userId.trim()) errs.userId = 'Enter your user ID.';
+    if (!password) errs.password = 'Enter your password.';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    if (!validate()) return;
 
+    setLoading(true);
     try {
-      // Use the actual backend API for auth
-      const res = await api.post('/auth/login', { userId: username, password });
+      const res = await api.post('/auth/login', { userId: userId.trim(), password });
 
+      // Frozen contract: response carries `accessToken` and an uppercase role.
       localStorage.setItem('token', res.data.accessToken);
       localStorage.setItem('role', res.data.role.toLowerCase());
-      localStorage.setItem('username', username);
+      localStorage.setItem('username', userId.trim());
 
-      if (res.data.role.toLowerCase() === 'patient') {
-        navigate('/patient');
-      } else {
-        navigate('/provider');
-      }
+      navigate(res.data.role.toLowerCase() === 'patient' ? '/patient' : '/provider');
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to login');
+      const apiError = err.response?.data?.error;
+      setError(apiError?.message || 'We could not sign you in. Check your credentials and try again.');
+      setFieldErrors({});
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative z-10 animate-fade-in">
-      <Card className="w-full max-w-md bg-panel/80">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-2xl border border-cyan-500/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
-            <ShieldCheck className="w-8 h-8 text-cyan-400" />
+    <div className="app-shell">
+      <div className="container-page flex min-h-screen flex-col py-6">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 self-start text-sm text-ink-muted hover:text-ink transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to overview
+        </Link>
+
+        <div className="flex flex-grow items-center justify-center py-8">
+          <div className="grid w-full max-w-4xl gap-6 lg:grid-cols-[1fr_1.05fr]">
+            {/* Clinic context panel */}
+            <div className="hidden flex-col justify-between surface p-7 lg:flex">
+              <div>
+                <span className="flex h-11 w-11 items-center justify-center rounded-control bg-accent-500/12 text-accent-300">
+                  <HeartPulse className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <h1 className="mt-6 font-display text-2xl font-semibold text-ink">ZKHealthPass</h1>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                  Consent-based access to electronic health records, verified with zero-knowledge proofs.
+                </p>
+              </div>
+
+              <ul className="mt-8 space-y-3.5 text-sm text-ink-muted">
+                {[
+                  'Authorisations are scoped per provider and per record category.',
+                  'Proofs carry no record content and no patient identity.',
+                  'Every granted access is written to an immutable audit trail.',
+                ].map((line) => (
+                  <li key={line} className="flex gap-2.5">
+                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-400" aria-hidden="true" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-8 border-t border-hairline pt-5 text-[13px] text-ink-faint">
+                Demonstration accounts are provided for evaluation. Real deployments authenticate against a
+                clinical identity provider.
+              </p>
+            </div>
+
+            {/* Sign-in form */}
+            <Card className="p-7">
+              <h2 className="font-display text-xl font-semibold text-ink">Sign in</h2>
+              <p className="mt-1.5 text-sm text-ink-muted">
+                Choose a workspace, then authenticate.
+              </p>
+
+              {/* Demo quick-switcher */}
+              <div className="mt-6 grid grid-cols-2 gap-2" role="group" aria-label="Demo account">
+                {Object.entries(DEMO_ACCOUNTS).map(([key, acct]) => {
+                  const active = role === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => selectDemo(key)}
+                      aria-pressed={active}
+                      className={`rounded-control border p-3 text-left transition-colors ${
+                        active
+                          ? 'border-accent-500 bg-accent-500/10'
+                          : 'border-hairline bg-surface-sunken hover:border-hairline-strong'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <acct.Icon
+                          className={`h-4 w-4 ${active ? 'text-accent-300' : 'text-ink-faint'}`}
+                          aria-hidden="true"
+                        />
+                        <span className={`text-sm font-semibold ${active ? 'text-accent-200' : 'text-ink'}`}>
+                          {acct.label}
+                        </span>
+                      </span>
+                      <span className="mt-1 block text-[12px] leading-snug text-ink-faint">{acct.blurb}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <form onSubmit={handleLogin} className="mt-6 space-y-4" noValidate>
+                <Field label="User ID" htmlFor="userId" error={fieldErrors.userId} required>
+                  <input
+                    id="userId"
+                    name="userId"
+                    type="text"
+                    autoComplete="username"
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                    className="control"
+                    placeholder="alice"
+                    aria-invalid={Boolean(fieldErrors.userId)}
+                  />
+                </Field>
+
+                <Field label="Password" htmlFor="password" error={fieldErrors.password} required>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="control pr-11"
+                      placeholder="••••••••"
+                      aria-invalid={Boolean(fieldErrors.password)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-ink-faint hover:text-ink transition-colors"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </Field>
+
+                {error && <Alert variant="error" title="Sign-in failed">{error}</Alert>}
+
+                <Button type="submit" size="lg" className="w-full" loading={loading}>
+                  {loading ? 'Authenticating…' : 'Continue to workspace'}
+                </Button>
+              </form>
+
+              <p className="mt-5 border-t border-hairline pt-4 text-[13px] leading-relaxed text-ink-faint">
+                Your role is determined by the account record, not by the workspace you pick here.
+              </p>
+            </Card>
           </div>
-          <h1 className="text-3xl font-bold text-gradient">ZKHealthPass</h1>
-          <p className="text-gray-400 mt-2 text-sm text-center">Zero-Knowledge Healthcare Identity & Access</p>
         </div>
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => { setRole('patient'); setUsername('alice'); setPassword('alicepw'); }}
-              className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
-                role === 'patient' 
-                  ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]' 
-                  : 'bg-panel border-panel-border text-gray-400 hover:bg-panel-hover'
-              }`}
-            >
-              <User className="w-6 h-6" />
-              <span className="font-medium">Patient</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setRole('provider'); setUsername('drbob'); setPassword('bobpw'); }}
-              className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
-                role === 'provider' 
-                  ? 'bg-purple-500/10 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(139,92,246,0.15)]' 
-                  : 'bg-panel border-panel-border text-gray-400 hover:bg-panel-hover'
-              }`}
-            >
-              <Stethoscope className="w-6 h-6" />
-              <span className="font-medium">Provider</span>
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-black/40 border border-panel-border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 border border-panel-border rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
-                required
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
-              {error}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={loading}>
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Sign In Securely'}
-          </Button>
-        </form>
-      </Card>
+      </div>
     </div>
   );
 }

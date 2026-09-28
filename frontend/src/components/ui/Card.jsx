@@ -6,13 +6,10 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export function Card({ className, children, ...props }) {
-  return (
-    <div 
-      className={cn("glass-panel rounded-2xl p-6", className)} 
-      {...props}
-    >
-      {children}
-    </div>
-  );
+/**
+ * Surface container. The old glassmorphism panel is gone; this is a solid,
+ * clinical surface so dense clinical data stays legible.
+ */
+export function Card({ className, as: Tag = 'section', ...props }) {
+  return <Tag className={cn('surface p-6', className)} {...props} />;
 }

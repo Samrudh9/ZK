@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../ui/Button';
-import { ShieldCheck, LogOut } from 'lucide-react';
+import { LogOut, HeartPulse } from 'lucide-react';
+import { Button, Badge } from '../ui';
 
 export function Navbar() {
   const navigate = useNavigate();
-  const role = localStorage.getItem('role') || 'Unknown';
+  const role = localStorage.getItem('role') || 'unknown';
   const name = localStorage.getItem('username') || 'User';
 
   const handleLogout = () => {
@@ -14,28 +14,28 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 glass-panel !rounded-none border-t-0 border-x-0 border-b border-panel-border px-6 py-4">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-lg border border-cyan-500/30">
-            <ShieldCheck className="w-6 h-6 text-cyan-400" />
-          </div>
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
+    <header className="sticky top-0 z-40 border-b border-hairline bg-surface/95 backdrop-blur">
+      <div className="container-page flex h-16 items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control bg-accent-500/12 text-accent-300">
+            <HeartPulse className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="truncate font-display text-[17px] font-bold tracking-tight text-ink">
             ZKHealthPass
           </span>
         </div>
-        
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col text-right">
-            <span className="text-sm font-medium text-gray-200">{name}</span>
-            <span className="text-xs text-cyan-400 font-semibold uppercase tracking-wider">{role}</span>
+
+        <div className="flex items-center gap-4">
+          <div className="hidden text-right sm:block">
+            <p className="text-sm font-medium leading-tight text-ink">{name}</p>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-400 hover:text-white">
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
+          <Badge tone={role === 'patient' ? 'info' : 'neutral'}>{role}</Badge>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+            Sign out
           </Button>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
