@@ -16,3 +16,9 @@
 - B: complete redesign (design system → components → pages → copy pass) → `npm run build` → open PR → merge.
 - A: verify B's redesign end-to-end against the live backend + Fabric (login → consent → proof → grant → replay 409); keep 21 backend tests green; decide/act on backend-review findings (esp. `getAuditEvent` bug).
 - Both: rehearse the final mentor/demo runbook.
+
+### Follow-up (same week): post-reset stack recovery
+- Environment reset took down all containers; full stack restored (Postgres `:5433`, Fabric 4 peers/3 orderers/CAs/CouchDBs, backend `:3001`).
+- Re-aligned chaincode packages: re-installed/approved/committed `accessControl` **1.2 at sequence 6** so every peer shares one package-id (the CCaaS server must run that exact id).
+- Fixed `No index exists for this sort` failures: the CCaaS packaging pipeline strips `META-INF`, and couchdb containers have no named volume, so a compose rebuild wiped all state-DB indexes. Added **`fabric-network/scripts/setup-couchdb-indexes.sh`** which re-deploys the chaincode's 4 index definitions (auditByPatient/auditByTimestamp/policyByCreated/policyByPatient) into all four peer CouchDBs.
+- Verified live E2E incl. the sorted audit-trial query (previously failing): login → consent ACTIVE → proof grant → replay 409 → audit-by-id + `?action=` filter both return events. Backend 21/21, chaincode 43/43 tests green.
