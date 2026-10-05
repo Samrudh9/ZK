@@ -7,6 +7,8 @@
 - Confirmed the frontend and live backend integrate on the frozen contract (routes, payloads, routing, localStorage keys match; Vite `/v1` proxy → `:3001`).
 - Created a **team guide** (`doc/guide.md`) dividing remaining Round-2 work: **A = backend report + live verification + weekly log**; **B = frontend visual redesign**.
 - Started the **back-end review report** (`doc/backend-review.md`): documented demo-scaffolding in `/records`, the `getAuditEvent` wrong-chaincode-function bug, and the register org-mapping inconsistency (report-only, per team decision).
+- **Frontend visual redesign merged** (PR #5): professional clinical UI, shared UI components, Landing page, redesigned Patient/Provider dashboards. `npm run build` passes.
+- **Live UI E2E verified** (post-redesign, via Vite proxy): login → consent ACTIVE → proof generate → provider verify (accessGranted true, authorizedCategories) → replay **409 PROOF_REPLAYED** — all contract behaviors preserved.
 
 ### Task in Progress
 - **Frontend visual redesign (B)**: replacing the generic cyan/purple glassmorphism with a professional clinical design system, shared UI components, a landing page, and redesigned patient/provider dashboards.
