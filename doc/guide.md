@@ -34,7 +34,7 @@ Produce `doc/backend-review.md` documenting (do NOT fix unless asked):
 
 ### A2. Keep the live stack healthy for B
 - Confirm backend on `:3001` and Vite on `:5173`; `/v1` proxy → `:3001`.
-- If the Fabric/Postgres stack is down, bring it back up **before** B does the integration test (see prior runbook: `docker compose up -d` in `fabric-network/`, restart `ccaas.accesscontrol` with chaincode-id `accessControl_1.0:70341a…`).
+- If the Fabric/Postgres stack is down, bring it back up **before** B does the integration test: `docker compose up -d` in `fabric-network/`, then restore the chaincode server + CouchDB indexes via `fabric-network/scripts/upgrade-chaincode.sh` (re-converges the committed seq) and `fabric-network/scripts/setup-couchdb-indexes.sh` (re-deploys state-DB indexes after a reset — the CouchDB containers use their writable layer, which a compose rebuild wipes).
 - Re-run backend suite (`cd backend && npm test`) before and after B merges; keep 21 tests green.
 
 ### A3. Verify B's redesign end-to-end (your "yes" to live E2E)

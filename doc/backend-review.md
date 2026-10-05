@@ -2,7 +2,7 @@
 
 > Scope: A-side review of the backend (`backend/`). Findings below have been
 > **resolved** in this pass (Round 2, commit post-`dba1bfd`): F1–F3 fixed,
-> chaincode upgraded to v1.2 (sequence 4), and E2E re-verified live.
+> chaincode upgraded to **v1.2 (sequence 6)**, and E2E re-verified live.
 > Baseline: `main` @ `dba1bfd`.
 
 ---
@@ -12,7 +12,7 @@
 The core backend is functional and verified: dual-identity Fabric gateway,
 contract-aligned proof flow, replay → `409`, live audit trail, and tests.
 **Round 2 action taken:** the items below are now fixed (see **Resolution**
-under each), chaincode upgraded to **v1.2 (sequence 4)**, and the full backend
+under each), chaincode upgraded to **v1.2 (sequence 6)**, and the full backend
 suite (21) + chaincode suite (43) pass. Live REST E2E re-verified: login →
 consent create → proof generate → provider verify → replay `409` →
 `GET /audit/:auditId` returns the real on-chain event.
@@ -41,7 +41,8 @@ consent create → proof generate → provider verify → replay `409` →
   endorsers under the multi-org endorsement policy
   (`AND(Org1MSP, Org2MSP)` decoded), causing `ProposalResponsePayloads do not
   match`. Replaced all internal timestamps with `ctx.stub.getTxTimestamp()`
-  (identical across endorsers). Chaincode now **v1.2 / sequence 4**.
+  (identical across endorsers). Chaincode now **v1.2 / sequence 6** (bumped 4 →
+  6 across two re-packages after environment resets).
 
 ### F3 — `auth.routes.js` register org mapping inconsistency (RESOLVED)
 - `registerSchema` had a dead `orgId: z.string().default('Org1MSP')` that the
@@ -68,8 +69,8 @@ consent create → proof generate → provider verify → replay `409` →
 ---
 
 ## Round-2 verification summary (live, this pass)
-- `accessControl` chaincode upgraded 1.0 → **1.2 (sequence 4)**, both orgs approved.
-- Backend :3001 (nodemon), Postgres :5433 (zk-zh-db), all 4 peers + orderers up, CouchDB indexes present.
+- `accessControl` chaincode upgraded 1.0 → **1.2 (sequence 6)**, both orgs approved.
+- Backend :3001 (nodemon), Postgres :5433 (zk-zh-db), all 4 peers + orderers up, CouchDB indexes deployed via `scripts/setup-couchdb-indexes.sh`.
 - Live E2E: consent create ACTIVE → proof generate (6 signals) → provider verify
   `accessGranted: true` (LAB, RADIOLOGY) → replay **409 PROOF_REPLAYED** →
   `GET /v1/audit/:auditId` returns `ACCESS_GRANTED`; fresh register (no orgId) logs in.
