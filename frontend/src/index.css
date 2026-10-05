@@ -2,54 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .glass-panel {
-    @apply bg-panel backdrop-blur-xl border border-panel-border shadow-2xl;
+/* ------------------------------------------------------------------
+   ZKHealthPass design tokens
+   Reusable primitives so pages stop repeating ad-hoc Tailwind strings.
+   ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    color-scheme: dark;
   }
-  
-  .glass-panel-hover {
-    @apply hover:bg-panel-hover transition-all duration-300;
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500;
+
+  body {
+    @apply bg-canvas text-ink font-sans text-[15px] leading-relaxed;
+  }
+
+  /* Real typography hierarchy */
+  h1, h2, h3, h4 {
+    @apply font-display text-ink tracking-tight;
+  }
+
+  h1 { @apply text-3xl sm:text-4xl font-bold; }
+  h2 { @apply text-xl sm:text-2xl font-semibold; }
+  h3 { @apply text-base font-semibold; }
+
+  /* Visible, consistent focus ring for keyboard users */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-400 ring-offset-2 ring-offset-canvas;
   }
 }
 
-/* Custom Scrollbar for a premium feel */
+@layer components {
+  /* Surfaces */
+  .surface {
+    @apply bg-surface border border-hairline rounded-card shadow-surface;
+  }
+
+  .surface-raised {
+    @apply bg-surface-raised border border-hairline rounded-card shadow-raised;
+  }
+
+  .surface-sunken {
+    @apply bg-surface-sunken border border-hairline rounded-card;
+  }
+
+  /* Semantic alert surfaces */
+  .alert {
+    @apply rounded-control border px-4 py-3 text-sm;
+  }
+  .alert-success { @apply alert border-success-line bg-success-soft text-success; }
+  .alert-danger  { @apply alert border-danger-line  bg-danger-soft  text-danger; }
+  .alert-warning { @apply alert border-warning-line bg-warning-soft text-warning; }
+  .alert-info    { @apply alert border-info-line    bg-info-soft    text-info; }
+
+  /* Form controls share one look */
+  .control {
+    @apply w-full bg-surface-sunken border border-hairline rounded-control px-3 py-2.5
+           text-ink placeholder:text-ink-faint
+           focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/25
+           disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
+  /* Monospace block for proofs / hashes / ids */
+  .code-block {
+    @apply bg-surface-sunken border border-hairline rounded-control p-3
+           font-mono text-xs text-ink-muted overflow-auto;
+  }
+
+  /* Section label above grouped content */
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint;
+  }
+}
+
+@layer utilities {
+  /* App shell background: quiet, clinical, no glow blobs */
+  .app-shell {
+    @apply min-h-screen bg-canvas bg-gradient-to-b from-canvas to-surface-sunken;
+  }
+
+  /* Layout container used by every page for consistent gutters */
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-gutter;
+  }
+}
+
+/* Scrollbars tuned to the dark clinical surface */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2); 
+  background: #0D1727;
 }
- 
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1); 
-  border-radius: 4px;
+  background: #2E3F5E;
+  border-radius: 6px;
+  border: 2px solid #0D1727;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2); 
-}
-
-/* Background animated gradient blob */
-.bg-blob {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80vw;
-  height: 80vh;
-  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.15) 0%, rgba(139, 92, 246, 0.15) 40%, transparent 70%);
-  filter: blur(80px);
-  z-index: -1;
-  animation: pulse-slow 10s infinite alternate;
-}
-
-@keyframes pulse-slow {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  background: #3A4E73;
 }
